@@ -8,7 +8,7 @@ from dtn_operator.model.kernel_network import KernelNetwork
 from dtn_operator.model.linear_kernel_network import LinearKernelNetwork
 
 
-def batch_conv_1d(x: torch.Tensor, batch_kernel: torch.Tensor):
+def batch_conv_1d(x: torch.Tensor, batch_kernel: torch.Tensor) -> torch.Tensor:
     """Batch convolution."""
     kernel_shape = batch_kernel.shape
     shape = x.shape
@@ -32,47 +32,40 @@ class FourierNetwork(nn.Module):
         kernel_in: int,
         kernel_modes: int,
         num_of_layers: int,
-    ):
+    ) -> None:
         """Inits Fourier network."""
         super().__init__()
-        self.size_in, self.modes = size_in, num_of_modes
-        self.outsize = size_in * size_in * num_of_modes
-        self.kernel_modes = kernel_modes
-        self.kernel_in = kernel_in
-        self.num_of_layers = num_of_layers
-        self.fc0 = nn.Linear(3, self.size_in)
-        self.fourreal = nn.ModuleList()
-        self.green = nn.ModuleList()
-        self.lin_layer_real = nn.ModuleList()
-        self.scale = 1 / (size_in * size_in)
-        for _ in range(num_of_layers):
-            self.fourreal.append(FourierKernel(self.size_in, self.size_in, self.modes))
-            self.green.append(
+        self.outsize: int = size_in * size_in * num_of_modes
+        self.num_of_layers: int = num_of_layers
+        self.fc0: nn.Linear = nn.Linear(3, self.size_in)
+        self.fourreal: nn.ModuleList = nn.ModuleList(
+            [
+                FourierKernel(size_in, size_in, num_of_modes)
+                for _ in range(self.num_of_layers)
+            ]
+        )
+        self.green: nn.ModuleList = nn.ModuleList(
+            [
                 KernelNetwork(
-                    self.kernel_in,
-                    self.kernel_modes,
-                    self.outsize,
-                    self.size_in,
-                    self.modes,
+                    kernel_in, kernel_modes, self.outsize, size_in, num_of_modes
                 )
-            )
+                for _ in range(self.num_of_layers)
+            ]
+        )
+        self.lin_layer_real: nn.ModuleList = nn.ModuleList(
+            [
+                LinearKernelNetwork(kernel_in, kernel_modes)
+                for _ in range(self.num_of_layers)
+            ]
+        )
+        self.scale: float = 1 / (size_in * size_in)
 
-            self.lin_layer_real.append(
-                LinearKernelNetwork(
-                    self.kernel_in,
-                    self.kernel_modes,
-                    self.size_in,
-                    self.size_in,
-                    self.modes,
-                )
-            )
+        self.fc1: nn.Linear = nn.Linear(self.size_in, 128)
+        self.fc2: nn.Linear = nn.Linear(128, 1)
 
-        self.fc1 = nn.Linear(self.size_in, 128)
-        self.fc2 = nn.Linear(128, 1)
+        self.weightx: nn.Parameter = nn.Parameter(torch.rand(1))
 
-        self.weightx = nn.Parameter(torch.rand(1))
-
-    def forward(self, x: torch.Tensor, y: torch.Tensor):
+    def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         """Forward method."""
         # shape of x: [batch_size, #gridpoints in x, #gridpoints in y,3] since (a(x,y),x,y).
         x = self.fc0(x)
@@ -81,7 +74,7 @@ class FourierNetwork(nn.Module):
         for i in range(self.num_of_layers - 1):
             weights = self.green[i](y)
             x1 = self.fourreal[i](x, weights)
-            shape = x1.shape
+            shape: int = x1.shape
             x2 = batch_conv_1d(x, torch.unsqueeze(self.lin_layer_real[i](y), -1))
             x = x1 + x2.view(shape)
             # pylint: disable=not-callable
@@ -92,6 +85,7 @@ class FourierNetwork(nn.Module):
         x2 = batch_conv_1d(
             x, torch.unsqueeze(self.lin_layer_real[self.num_of_layers - 1](y), -1)
         )
+        # pyre-ignore[61]
         x = x1 + x2.view(shape)
 
         x = x.permute(0, 2, 1)

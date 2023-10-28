@@ -15,24 +15,28 @@ class KernelNetwork(nn.Module):
         outsize: int,
         outker: int,
         outmodes: int,
-    ):
+    ) -> None:
         """Inits Kernel Network."""
         super().__init__()
-        self.outker, self.outmodes = outker, outmodes
-        self.size_in, self.modes = size_in, num_of_modes
-        self.outsize = outsize
-        self.halfsize = int(self.outsize / 2)
-        self.fc0 = nn.Linear(3, self.size_in)
-        self.fc1 = nn.Linear(self.size_in, 128)
-        self.fc3 = nn.Linear(128, 128)
-        self.fc2 = nn.Linear(128, 1)
-        self.fc4 = nn.Linear(self.modes, self.outsize)
-        self.fc1c = nn.Linear(self.size_in, 128)
-        self.fc3c = nn.Linear(128, 128)
-        self.fc2c = nn.Linear(128, 1)
-        self.fc4c = nn.Linear(self.modes, self.outsize)
+        self.outker: int = outker
+        self.outmodes: int = outmodes
+        self.modes: int = num_of_modes
+        self.outsize: int = outsize
+        self.fc0: nn.Linear = nn.Linear(3, size_in)
+        self.real_fc_layers: list[nn.Linear] = [
+            nn.Linear(size_in, 128),
+            nn.Linear(128, 128),
+            nn.Linear(128, 1),
+            nn.Linear(self.modes, self.outsize),
+        ]
+        self.img_fc_layers: list[nn.Linear] = [
+            nn.Linear(size_in, 128),
+            nn.Linear(128, 128),
+            nn.Linear(128, 1),
+            nn.Linear(self.modes, self.outsize),
+        ]
 
-    def forward(self, x: torch.Tensor):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward method."""
         # shape of x: [batch_size, #gridpoints in x, #gridpoints in y,3] since (a(x,y),x,y).
         xft = self.fc0(x)
@@ -42,16 +46,20 @@ class KernelNetwork(nn.Module):
         xft = fft.rfftn(xft, dim=2, norm="ortho")
         xft = xft[:, :, : self.modes]
         xft = xft.permute(0, 2, 1)
-        xftreal = F.relu(self.fc1(xft.real))
-        xftreal = F.relu(self.fc3(xftreal))
-        xftreal = F.relu(self.fc2(xftreal))
-        xftreal = F.relu(self.fc4(xftreal.squeeze()))
+        xftreal = self._apply_fc_layers(self.real_fc_layers, xft.real)
         xftreal = xftreal.view(-1, self.outker, self.outker, self.outmodes)
 
-        xftcomp = F.relu(self.fc1(xft.imag))
-        xftcomp = F.relu(self.fc3(xftcomp))
-        xftcomp = F.relu(self.fc2(xftcomp))
-        xftcomp = F.relu(self.fc4(xftcomp.squeeze()))
+        xftcomp = self._apply_fc_layers(self.img_fc_layers, xft.imag)
         xftcomp = xftcomp.view(-1, self.outker, self.outker, self.outmodes)
 
         return xftreal + 1j * xftcomp
+
+    @staticmethod
+    def _apply_fc_layers(
+        fc_layers: list[nn.Linear], tensor: torch.Tensor
+    ) -> torch.Tensor:
+        for i, layer in enumerate(fc_layers):
+            if i == len(fc_layers) - 1:
+                tensor = tensor.squeeze()
+            tensor = F.relu(layer(tensor))
+        return tensor
