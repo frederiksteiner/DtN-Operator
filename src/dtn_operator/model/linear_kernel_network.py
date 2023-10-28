@@ -1,11 +1,15 @@
 """Linear Kernel Network module."""
+import torch
+from torch.nn import functional as F
 from torch import nn
-import torch.nn.functional as F
 
 
 class LinearKernelNetwork(nn.Module):
     """Linear Kernel Network used in fourier network."""
-    def __init__(self, size_in, numOfmodes, outsize, outker, outmodes):
+
+    def __init__(
+        self, size_in: int, numOfmodes: int, outsize: int, outker: int, outmodes: int
+    ):
         """Inits Linear Kernel Network."""
         super().__init__()
         self.outker, self.outmodes = outker, outmodes
@@ -17,7 +21,7 @@ class LinearKernelNetwork(nn.Module):
         self.fc2 = nn.Linear(128, 32)
         self.fc3 = nn.Linear(self.modes, 32)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor):
         """Forward method."""
         # shape of x: [batch_size, #gridpoints in x, #gridpoints in y,3] since (a(x,y),x,y).
         xft = self.fc0(x)
