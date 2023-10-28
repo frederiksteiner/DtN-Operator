@@ -1,0 +1,72 @@
+[tool.poetry]
+name = "test-repo"
+version = "0.1.0"
+description = ""
+authors = ["Frederik <steinertrash@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+
+[tool.poetry.group.dev.dependencies]
+
+black = "~22.12"                                    # The uncompromising code formatter.
+coverage = {extras = ["toml"], version = "~7.3.0"}    # Code coverage measurement for Python
+unittest-xml-reporting = "~3.2"                     # unittest-based test runner with Ant/JUnit like XML reporting.
+pre-commit = "~3"                                   # A framework for managing and maintaining multi-language pre-commit hooks.
+pre-commit-hooks = "~4"                             # Some out-of-the-box hooks for pre-commit.
+pyre-check = "~0.9"                                 # A performant type checker for Python
+pydocstyle = "~6.3"                                 # Python docstring style checker
+pylint = "~3.0.0"                                       # python code static checker
+reorder-python-imports = "~3"                       # Tool for reordering python imports
+ipykernel = "~6.26.0"                                 # IPython Kernel for Jupyter
+
+[tool.poetry.scripts]
+step-step = "test-repo.steps:cli"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pylint.main]
+fail-on = "F,E,W,C"
+fail-under = 0.0
+generated-members = ["mlflow.*", "patsy.*"]
+extension-pkg-whitelist = "numpy"
+
+[tool.pylint.basic]
+good-names = ["i", "j", "k", "n", "s", "d", "ex", "Run", "_", "pk", "x", "y", "df", "f", "X", "ax"]
+
+[tool.pylint.format]
+max-line-length = 140
+max-args = 8
+
+[tool.pylint.messages_control]
+disable = [
+    # pydocstyle takes care of this...
+    "missing-module-docstring",
+    "missing-function-docstring",
+    "missing-class-docstring",
+
+    # don't hinder me creating small classes!
+    "too-few-public-methods",
+
+    # reorder-python-imports should know what it's doing
+    "wrong-import-order",
+
+    # can't do much about duplicate imports in two files, I'm afraid...
+    "duplicate-code",
+]
+
+[tool.pylint.miscellaneous]
+notes = []  # don't warn about `TODO` and `FIXME` comments
+
+[tool.pylint.reports]
+output-format = "parseable:pylintout,text"
+
+[tool.pydocstyle]
+match-dir = "[^\\.][^test].*"
+convention = "google"
+
+[tool.coverage.run]
+command_line = "-m xmlrunner discover --output-file junittest.xml"
