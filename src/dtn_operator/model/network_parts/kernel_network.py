@@ -23,18 +23,22 @@ class KernelNetwork(nn.Module):
         self.modes: int = num_of_modes
         self.outsize: int = outsize
         self.fc0: nn.Linear = nn.Linear(3, size_in)
-        self.real_fc_layers: list[nn.Linear] = [
-            nn.Linear(size_in, 128),
-            nn.Linear(128, 128),
-            nn.Linear(128, 1),
-            nn.Linear(self.modes, self.outsize),
-        ]
-        self.img_fc_layers: list[nn.Linear] = [
-            nn.Linear(size_in, 128),
-            nn.Linear(128, 128),
-            nn.Linear(128, 1),
-            nn.Linear(self.modes, self.outsize),
-        ]
+        self.real_fc_layers: nn.ModuleList = nn.ModuleList(
+            [
+                nn.Linear(size_in, 128),
+                nn.Linear(128, 128),
+                nn.Linear(128, 1),
+                nn.Linear(self.modes, self.outsize),
+            ]
+        )
+        self.img_fc_layers: nn.ModuleList = nn.ModuleList(
+            [
+                nn.Linear(size_in, 128),
+                nn.Linear(128, 128),
+                nn.Linear(128, 1),
+                nn.Linear(self.modes, self.outsize),
+            ]
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward method."""
@@ -56,7 +60,7 @@ class KernelNetwork(nn.Module):
 
     @staticmethod
     def _apply_fc_layers(
-        fc_layers: list[nn.Linear], tensor: torch.Tensor
+        fc_layers: nn.ModuleList, tensor: torch.Tensor
     ) -> torch.Tensor:
         for i, layer in enumerate(fc_layers):
             if i == len(fc_layers) - 1:

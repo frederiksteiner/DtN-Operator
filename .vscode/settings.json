@@ -3,6 +3,9 @@
     "python.testing.unittestEnabled": true,
     "python.linting.pylintEnabled": true,
     "python.linting.pydocstyleEnabled": true,
+    "python.linting.pylintArgs": [
+        "--generated-members", "torch.*"
+    ],
     "python.testing.unittestArgs": [
         "-v",
         "-s",

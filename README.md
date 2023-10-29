@@ -6,8 +6,8 @@ If not already installed, install Python. The recommended way is to use [pyenv](
 
 ```shell
 # Install Python if necessary
-pyenv install 3.8.13
-pyenv local 3.8.13
+pyenv install 3.10.13
+pyenv local 3.10.13
 ```
 
 ### Install Poetry
@@ -19,12 +19,9 @@ If your are new to Poetry, you may find <https://python-poetry.org/docs/basic-us
 
 ```shell
 # Create venv and install all dependencies
-poetry env use 3.8
+poetry env use 3.10
 poetry install
 
 # add pre-commit hooks
 poetry run pre-commit install
-
-# load the environment variables (see section Environment Variables below)
-source env.sh
 ```

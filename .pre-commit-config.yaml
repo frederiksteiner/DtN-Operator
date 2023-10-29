@@ -43,7 +43,7 @@ repos:
 
       - id: pylint
         name: pylint
-        entry: env PYTHONPATH='src/blp/:tests/blp/' pylint
+        entry: env PYTHONPATH='src/dtn_operator/:tests/dtn_operator/' pylint
         language: system
         require_serial: true
         types: [python]

@@ -3,9 +3,10 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
-from dtn_operator.model.fourier_kernel import FourierKernel
-from dtn_operator.model.kernel_network import KernelNetwork
-from dtn_operator.model.linear_kernel_network import LinearKernelNetwork
+from dtn_operator.model.network_parts.fourier_kernel import FourierKernel
+from dtn_operator.model.network_parts.kernel_network import KernelNetwork
+
+# pylint: disable=not-callable
 
 
 def batch_conv_1d(x: torch.Tensor, batch_kernel: torch.Tensor) -> torch.Tensor:
@@ -35,9 +36,10 @@ class FourierNetwork(nn.Module):
     ) -> None:
         """Inits Fourier network."""
         super().__init__()
+        self.size_in = size_in
         self.outsize: int = size_in * size_in * num_of_modes
         self.num_of_layers: int = num_of_layers
-        self.fc0: nn.Linear = nn.Linear(3, self.size_in)
+        self.fc0: nn.Linear = nn.Linear(3, size_in)
         self.fourreal: nn.ModuleList = nn.ModuleList(
             [
                 FourierKernel(size_in, size_in, num_of_modes)
@@ -52,11 +54,8 @@ class FourierNetwork(nn.Module):
                 for _ in range(self.num_of_layers)
             ]
         )
-        self.lin_layer_real: nn.ModuleList = nn.ModuleList(
-            [
-                LinearKernelNetwork(kernel_in, kernel_modes)
-                for _ in range(self.num_of_layers)
-            ]
+        self.wreal = nn.ModuleList(
+            [nn.Conv1d(size_in, size_in, 1) for _ in range(self.num_of_layers)]
         )
         self.scale: float = 1 / (size_in * size_in)
 
@@ -68,29 +67,26 @@ class FourierNetwork(nn.Module):
     def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         """Forward method."""
         # shape of x: [batch_size, #gridpoints in x, #gridpoints in y,3] since (a(x,y),x,y).
+        batchsize = x.shape[0]
         x = self.fc0(x)
         x = x.permute(0, 2, 1)
 
         for i in range(self.num_of_layers - 1):
             weights = self.green[i](y)
             x1 = self.fourreal[i](x, weights)
-            shape: int = x1.shape
-            x2 = batch_conv_1d(x, torch.unsqueeze(self.lin_layer_real[i](y), -1))
+            shape = x1.shape
+            x2 = self.wreal[i](x.view(batchsize, self.size_in, -1))
             x = x1 + x2.view(shape)
-            # pylint: disable=not-callable
             x = F.gelu(x)
 
         weights = self.green[self.num_of_layers - 1](y)
         x1 = self.fourreal[self.num_of_layers - 1](x, weights)
-        x2 = batch_conv_1d(
-            x, torch.unsqueeze(self.lin_layer_real[self.num_of_layers - 1](y), -1)
-        )
+        x2 = self.wreal[self.num_of_layers - 1](x.view(batchsize, self.size_in, -1))
         # pyre-ignore[61]
         x = x1 + x2.view(shape)
 
         x = x.permute(0, 2, 1)
         x = self.fc1(x)
-        # pylint: disable=not-callable
         x = F.gelu(x)
         x = self.fc2(x)
         return x * self.weightx

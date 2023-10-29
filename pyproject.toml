@@ -1,13 +1,16 @@
 [tool.poetry]
-name = "test-repo"
+name = "dtn-operator"
 version = "0.1.0"
 description = ""
 authors = ["Frederik <steinertrash@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.10"
-torch = "^2.1.0"
+python = ">=3.10,<3.13"
+torch = ">=2.0.0, !=2.0.1, !=2.1.0"
+lightning = "^2.1.0"
+scipy = "^1.11.3"
+h5py = "^3.10.0"
 
 [tool.poetry.group.dev.dependencies]
 
@@ -33,7 +36,7 @@ build-backend = "poetry.core.masonry.api"
 fail-on = "F,E,W,C"
 fail-under = 0.0
 generated-members = ["mlflow.*", "patsy.*"]
-extension-pkg-whitelist = "numpy"
+extension-pkg-whitelist = ["numpy", "torch"]
 
 [tool.pylint.basic]
 good-names = ["i", "j", "k", "n", "s", "d", "ex", "Run", "_", "pk", "x", "y", "df", "f", "X", "ax"]
