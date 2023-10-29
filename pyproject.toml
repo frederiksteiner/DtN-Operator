@@ -35,8 +35,8 @@ build-backend = "poetry.core.masonry.api"
 [tool.pylint.main]
 fail-on = "F,E,W,C"
 fail-under = 0.0
-generated-members = ["mlflow.*", "patsy.*"]
-extension-pkg-whitelist = ["numpy", "torch"]
+generated-members = ["torch.*"]
+extension-pkg-whitelist = ["numpy"]
 
 [tool.pylint.basic]
 good-names = ["i", "j", "k", "n", "s", "d", "ex", "Run", "_", "pk", "x", "y", "df", "f", "X", "ax"]
