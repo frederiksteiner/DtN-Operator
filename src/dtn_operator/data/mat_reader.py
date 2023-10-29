@@ -12,22 +12,20 @@ class MatReader:
 
     def __init__(
         self,
-        file_path: str,
         to_cuda: bool = False,
     ) -> None:
         """Inits mat reader class."""
         self.to_cuda: bool = to_cuda
-        self.file_path: str = file_path
 
         self._data: Optional[dict[str, torch.Tensor]] = None
+        self.file_path: str = ""
         self.old_mat: bool = False
-        self._load_file()
 
     @property
     def data(self) -> dict[str, torch.Tensor]:
         """Returns data."""
         if not self._data:
-            raise RuntimeError("Data has not been set yet.")
+            raise RuntimeError("Data has not been loaded yet.")
         return self._data
 
     def _load_file(self) -> None:
